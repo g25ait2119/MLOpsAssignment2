@@ -1,32 +1,32 @@
+name: ML Ops Assignment 2
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
-  jobs:
-    ml-ops-assignment2:
-      runs-on: ubuntu-latest // windows
-      env:
-        WANDB_PROJECT: ML Ops assignment2
-        WANDB_API_KEY: ${{secrets.WANDB_API_KEY}}
-        HF_TOKEN: ${{secrets.HF_API_KEY}}
-        HF_REPO_ID: ${{sureshbabugandla/hindi-en-demo-model}}
-        UPLOAD_TO_HF: "true"
-      steps:
-        - name: Checkout Repository
-        - uses: actions/checkout@v4
-        - name: building docker image
-        - run: docker build -t ml-ops-assignment2 .
-        - name: Run Inference
-        - run:
-             docker run --rm ml-ops-assignment2
+    branches: [main]
 
+jobs:
+  ml-ops-assignment2:
+    runs-on: ubuntu-latest
+    env:
+      WANDB_PROJECT: ml-ops-assignment2
+      WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_API_KEY }}
+      HF_REPO_ID: sureshbabugandla/hindi-en-demo-model
+      UPLOAD_TO_HF: "true"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
+      - name: Build Docker image
+        run: docker build -t ml-ops-assignment2 .
 
-
-
-
-
-
+      - name: Run inference
+        run: |
+          docker run --rm \
+            -e WANDB_API_KEY="${WANDB_API_KEY}" \
+            -e WANDB_PROJECT="${WANDB_PROJECT}" \
+            -e HF_TOKEN="${HF_TOKEN}" \
+            -e HF_REPO_ID="${HF_REPO_ID}" \
+            -e UPLOAD_TO_HF="${UPLOAD_TO_HF}" \
+            ml-ops-assignment2
