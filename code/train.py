@@ -28,8 +28,8 @@ from utils import (
     compute_metrics,
 )
 
-# Disable Weights & Biases logging which would otherwise prompt for an API key.
-os.environ["WANDB_DISABLED"] = "true"
+# Enable Weights & Biases logging
+os.environ.pop("WANDB_DISABLED", None)
 
 
 def build_trainer(
@@ -62,7 +62,8 @@ def build_trainer(
         logging_dir=logging_dir,
         logging_steps=logging_steps,
         eval_strategy="steps",
-        report_to=[],
+        report_to=["wandb"],
+        run_name="distilbert-run-1",
     )
 
     return Trainer(
@@ -100,6 +101,21 @@ def main() -> None:
     train_dataset = MyDataset(payload["train_encodings"], payload["train_labels_encoded"])
     test_dataset = MyDataset(payload["test_encodings"], payload["test_labels_encoded"])
     num_labels = len(payload["id2label"])
+
+    import wandb
+    wandb.init(
+        project=os.environ.get("WANDB_PROJECT", "mlops-assignment2"),
+        name="distilbert-run-1",
+        config={
+            "model": MODEL_NAME,
+            "epochs": args.epochs,
+            "train_batch_size": args.train_batch_size,
+            "eval_batch_size": args.eval_batch_size,
+            "learning_rate": args.learning_rate,
+            "warmup_steps": args.warmup_steps,
+            "weight_decay": args.weight_decay,
+        }
+    )
 
     trainer = build_trainer(
         train_dataset=train_dataset,
@@ -143,6 +159,8 @@ def main() -> None:
             print(f"Model and tokenizer pushed to https://huggingface.co/{hf_repo}")
     else:
         print("Skipping HF Hub push (no --hf-repo provided and HF_REPO_ID env not set).")
+
+    wandb.finish()
 
 
 if __name__ == "__main__":

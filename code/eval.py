@@ -30,7 +30,7 @@ def build_eval_trainer(model_dir: str, eval_batch_size: int) -> Trainer:
     eval_args = TrainingArguments(
         output_dir="./eval_tmp",
         per_device_eval_batch_size=eval_batch_size,
-        report_to=[],
+        report_to=["wandb"],
     )
 
     return Trainer(model=model, args=eval_args, compute_metrics=compute_metrics)
@@ -96,11 +96,25 @@ def main() -> None:
     id2label = payload["id2label"]
     test_labels = payload["test_labels"]
 
+    import wandb
+    wandb.init(
+        project=os.environ.get("WANDB_PROJECT", "mlops-assignment2"),
+        name="distilbert-eval-1",
+        job_type="evaluation"
+    )
+
     trainer = build_eval_trainer(args.model_dir, args.eval_batch_size)
 
     # Trainer.evaluate() reports loss + our compute_metrics dict.
     metrics = trainer.evaluate(eval_dataset=test_dataset)
     print("Evaluation metrics:", metrics)
+
+    # Log final metrics to W&B explicitly
+    wandb.log({
+        "final/loss": metrics.get("eval_loss"),
+        "final/accuracy": metrics.get("eval_accuracy"),
+        "final/f1": metrics.get("eval_f1", 0.0), # Assuming f1 might be added, or just fallbacks
+    })
 
     predicted_labels = predict_labels(trainer, test_dataset, id2label)
 
@@ -116,6 +130,12 @@ def main() -> None:
         test_labels=test_labels,
         predicted_labels=predicted_labels,
     )
+
+    # Upload to W&B as a versioned Artifact
+    artifact = wandb.Artifact("eval-report", type="evaluation")
+    artifact.add_file(os.path.join(args.results_dir, "classification_report.json"))
+    wandb.log_artifact(artifact)
+    wandb.finish()
 
 
 if __name__ == "__main__":
