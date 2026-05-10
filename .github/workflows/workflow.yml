@@ -1,0 +1,32 @@
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  jobs:
+    ml-ops-assignment2:
+      runs-on: ubuntu-latest // windows
+      env:
+        WANDB_PROJECT: ML Ops assignment2
+        WANDB_API_KEY: ${{secrets.WANDB_API_KEY}}
+        HF_TOKEN: ${{secrets.HF_API_KEY}}
+        HF_REPO_ID: ${{sureshbabugandla/hindi-en-demo-model}}
+        UPLOAD_TO_HF: "true"
+      steps:
+        - name: Checkout Repository
+        - uses: actions/checkout@v4
+        - name: building docker image
+        - run: docker build -t ml-ops-assignment2 .
+        - name: Run Inference
+        - run:
+             docker run --rm ml-ops-assignment2
+
+
+
+
+
+
+
+
