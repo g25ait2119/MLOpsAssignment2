@@ -9,8 +9,10 @@ from __future__ import annotations
 import argparse
 import os
 
+from huggingface_hub import login as hf_login
 from transformers import (
     DistilBertForSequenceClassification,
+    DistilBertTokenizerFast,
     Trainer,
     TrainingArguments,
 )
@@ -85,6 +87,11 @@ def main() -> None:
     parser.add_argument("--logging-dir", type=str, default=LOGS_DIR)
     parser.add_argument("--model-out", type=str, default=CACHED_MODEL_DIR,
                         help="Directory to save the fine-tuned model.")
+    parser.add_argument("--hf-repo", type=str, default=None,
+                        help="HuggingFace Hub repo id, e.g. 'your-username/distilbert-goodreads-genres'. "
+                             "If provided, the model and tokenizer are pushed to HF Hub.")
+    parser.add_argument("--hf-token", type=str, default=None,
+                        help="HuggingFace API token. Falls back to the HF_TOKEN env variable.")
     args = parser.parse_args()
 
     print(f"Using device: {DEVICE}")
@@ -114,6 +121,30 @@ def main() -> None:
     trainer.save_model(args.model_out)
     print(f"Saved fine-tuned model to {args.model_out}")
 
+    # ---- Push model & tokenizer to Hugging Face Hub ----
+    hf_repo = args.hf_repo or os.environ.get("HF_REPO_ID")
+    hf_token = args.hf_token or os.environ.get("HF_TOKEN")
+
+    if hf_repo:
+        if not hf_token:
+            print("WARNING: --hf-repo was specified but no token found. "
+                  "Set --hf-token or the HF_TOKEN env variable.")
+        else:
+            print(f"Logging in to Hugging Face Hub...")
+            hf_login(token=hf_token)
+
+            print(f"Pushing model to HF Hub: {hf_repo}")
+            trainer.model.push_to_hub(hf_repo)
+
+            print(f"Pushing tokenizer to HF Hub: {hf_repo}")
+            tokenizer = DistilBertTokenizerFast.from_pretrained(MODEL_NAME)
+            tokenizer.push_to_hub(hf_repo)
+
+            print(f"Model and tokenizer pushed to https://huggingface.co/{hf_repo}")
+    else:
+        print("Skipping HF Hub push (no --hf-repo provided and HF_REPO_ID env not set).")
+
 
 if __name__ == "__main__":
     main()
+

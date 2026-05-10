@@ -26,5 +26,10 @@ COPY code/ ./code/
 # Set the working directory to the code directory so scripts run easily
 WORKDIR /app/code
 
-# Keep container running interactively by default, or run a specific script.
-CMD ["/bin/bash"]
+# HF_TOKEN and HF_REPO_ID are passed at runtime via `docker run -e`
+ENV HF_TOKEN=""
+ENV HF_REPO_ID=""
+
+# Run the full pipeline: download data, train (with HF push), and evaluate
+CMD python data.py && python train.py && python eval.py
+

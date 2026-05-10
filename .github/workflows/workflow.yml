@@ -12,8 +12,7 @@ jobs:
       WANDB_PROJECT: ml-ops-assignment2
       WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
       HF_TOKEN: ${{ secrets.HF_API_KEY }}
-      HF_REPO_ID: sureshbabugandla/hindi-en-demo-model
-      UPLOAD_TO_HF: "true"
+      HF_REPO_ID: sureshbabugandla/ML_OPS_ASSIGNMENT2
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,12 +20,11 @@ jobs:
       - name: Build Docker image
         run: docker build -t ml-ops-assignment2 .
 
-      - name: Run inference
+      - name: Run ML pipeline
         run: |
           docker run --rm \
             -e WANDB_API_KEY="${WANDB_API_KEY}" \
             -e WANDB_PROJECT="${WANDB_PROJECT}" \
             -e HF_TOKEN="${HF_TOKEN}" \
             -e HF_REPO_ID="${HF_REPO_ID}" \
-            -e UPLOAD_TO_HF="${UPLOAD_TO_HF}" \
-            ml-ops-assignment2
+            ml-ops-assignment2
