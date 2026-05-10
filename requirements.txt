@@ -4,3 +4,5 @@ wandb
 huggingface_hub
 torch
 jupyter
+accelerate>=1.1.0
+requests

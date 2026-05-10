@@ -31,7 +31,5 @@ ENV HF_TOKEN=""
 ENV HF_REPO_ID=""
 
 # Run the full pipeline: download data, train (with HF push), and evaluate
-# NOTE: For CI/CD, we only push the model to HF Hub since data download
-# from UCSD servers is unreliable. Training should be done locally or on Colab.
-CMD python push_to_hf.py
+CMD python data.py && python train.py && python eval.py
 
