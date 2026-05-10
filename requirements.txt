@@ -1,0 +1,6 @@
+transformers
+scikit-learn
+wandb
+huggingface_hub
+torch
+jupyter
