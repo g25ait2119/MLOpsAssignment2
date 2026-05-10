@@ -41,4 +41,4 @@ This repository contains the complete MLOps workflow for fine-tuning a DistilBER
 ## Important Links
 
 - **Hugging Face Model:** [https://huggingface.co/sureshbabugandla/ML_OPS_ASSIGNMENT2](https://huggingface.co/sureshbabugandla/ML_OPS_ASSIGNMENT2)
-- **W&B Dashboard:** [https://wandb.ai/sureshbabugandla/mlops-assignment2](https://wandb.ai/sureshbabugandla/mlops-assignment2) *(Replace with your actual W&B username/project URL if different).*
+- **W&B Dashboard:** [https://wandb.ai/sureshbabugandla/mlops-assignment2](https://wandb.ai/sureshbabugandla/mlops-assignment2)
