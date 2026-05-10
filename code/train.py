@@ -157,6 +157,7 @@ def main() -> None:
             tokenizer.push_to_hub(hf_repo)
 
             print(f"Model and tokenizer pushed to https://huggingface.co/{hf_repo}")
+            wandb.run.summary["huggingface_model"] = f"https://huggingface.co/{hf_repo}"
     else:
         print("Skipping HF Hub push (no --hf-repo provided and HF_REPO_ID env not set).")
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Dict, List, Tuple
 
 import torch
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score
 
 
 # ---------------------------------------------------------------------------
@@ -71,7 +71,10 @@ def build_label_maps(labels: List[str]) -> Tuple[Dict[str, int], Dict[int, str]]
 # Metrics
 # ---------------------------------------------------------------------------
 def compute_metrics(pred):
-    """HuggingFace Trainer-compatible metric function returning accuracy."""
+    """HuggingFace Trainer-compatible metric function returning accuracy and F1."""
     labels = pred.label_ids
     preds = pred.predictions.argmax(-1)
-    return {"accuracy": accuracy_score(labels, preds)}
+    return {
+        "accuracy": accuracy_score(labels, preds),
+        "f1": f1_score(labels, preds, average="weighted")
+    }
