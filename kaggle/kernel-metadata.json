@@ -1,0 +1,13 @@
+{
+  "id": "sureshbabugandla/mlops-assignment2-training",
+  "title": "MLOps Assignment 2 - Training Pipeline",
+  "code_file": "kaggle_train.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": false,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": []
+}

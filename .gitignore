@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Model artifacts (large files)
+distilbert-reviews-genres/
+results/
+logs/
+eval_tmp/
+eval_results/
+
+# Data caches
+genre_reviews_dict.pickle
+encoded_data.pt
+
+# Environment
+.env
+*.env
+
+# Kaggle
+kaggle_output/
+.kaggle/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

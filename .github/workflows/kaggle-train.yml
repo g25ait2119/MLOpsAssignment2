@@ -1,0 +1,120 @@
+name: Kaggle Training Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Force trigger Kaggle training'
+        required: false
+        default: 'true'
+  push:
+    branches: [main]
+    paths:
+      - 'code/**'
+      - 'kaggle/**'
+
+jobs:
+  kaggle-train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      KERNEL_SLUG: ${{ secrets.KAGGLE_USERNAME }}/mlops-assignment2-training
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Kaggle CLI
+        run: pip install kaggle
+
+      - name: Configure Kaggle credentials
+        run: |
+          mkdir -p ~/.kaggle
+          echo '{"username":"'"$KAGGLE_USERNAME"'","key":"'"$KAGGLE_KEY"'"}' > ~/.kaggle/kaggle.json
+          chmod 600 ~/.kaggle/kaggle.json
+
+      - name: Update kernel metadata with username
+        run: |
+          # Update the kernel-metadata.json id to use the actual KAGGLE_USERNAME
+          cd kaggle
+          sed -i "s|\"id\": \".*\"|\"id\": \"${KAGGLE_USERNAME}/mlops-assignment2-training\"|" kernel-metadata.json
+          echo "Updated kernel-metadata.json:"
+          cat kernel-metadata.json
+
+      - name: Push kernel to Kaggle
+        run: |
+          echo "Pushing kernel to Kaggle..."
+          kaggle kernels push -p ./kaggle/
+          echo "Kernel pushed successfully. Waiting for execution to start..."
+          sleep 30
+
+      - name: Wait for Kaggle kernel to complete
+        run: |
+          MAX_WAIT=7200
+          INTERVAL=60
+          ELAPSED=0
+
+          echo "Monitoring kernel: $KERNEL_SLUG"
+
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            STATUS=$(kaggle kernels status "$KERNEL_SLUG" 2>&1 || true)
+            echo "[$((ELAPSED/60))m] Status: $STATUS"
+
+            if echo "$STATUS" | grep -qi "complete"; then
+              echo "Kernel completed successfully!"
+              exit 0
+            fi
+
+            if echo "$STATUS" | grep -qi "error\|cancel"; then
+              echo "Kernel failed or was cancelled!"
+              echo "$STATUS"
+              exit 1
+            fi
+
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          echo "ERROR: Timeout after $((MAX_WAIT/60)) minutes"
+          exit 1
+
+      - name: Download kernel output
+        run: |
+          mkdir -p kaggle_output
+          kaggle kernels output "$KERNEL_SLUG" -p ./kaggle_output/
+          echo "Downloaded output files:"
+          ls -la kaggle_output/
+          if [ -f kaggle_output/metrics.json ]; then
+            echo "Metrics:"
+            cat kaggle_output/metrics.json
+          fi
+
+      - name: Update README with training metrics
+        run: python scripts/update_readme.py
+
+      - name: Commit and push updated README
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          if git diff --cached --quiet; then
+            echo "No changes to README.md"
+          else
+            git commit -m "docs: update README with training metrics from Kaggle [skip ci]"
+            git push
+            echo "README.md updated and pushed!"
+          fi
+
+      - name: Upload metrics as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: training-metrics
+          path: kaggle_output/
+          retention-days: 90
