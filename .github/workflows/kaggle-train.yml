@@ -18,9 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
-      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
-      KERNEL_SLUG: ${{ secrets.KAGGLE_USERNAME }}/mlops-assignment2-training
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_KEY }}
+      KAGGLE_USERNAME: sureshbabugandla
+      KERNEL_SLUG: sureshbabugandla/mlops-assignment2-training
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,22 +36,21 @@ jobs:
       - name: Configure Kaggle credentials
         run: |
           mkdir -p ~/.kaggle
-          echo '{"username":"'"$KAGGLE_USERNAME"'","key":"'"$KAGGLE_KEY"'"}' > ~/.kaggle/kaggle.json
-          chmod 600 ~/.kaggle/kaggle.json
-
-      - name: Update kernel metadata with username
-        run: |
-          # Update the kernel-metadata.json id to use the actual KAGGLE_USERNAME
-          cd kaggle
-          sed -i "s|\"id\": \".*\"|\"id\": \"${KAGGLE_USERNAME}/mlops-assignment2-training\"|" kernel-metadata.json
-          echo "Updated kernel-metadata.json:"
-          cat kernel-metadata.json
+          echo "$KAGGLE_API_TOKEN" > ~/.kaggle/access_token
+          chmod 600 ~/.kaggle/access_token
 
       - name: Push kernel to Kaggle
         run: |
           echo "Pushing kernel to Kaggle..."
-          kaggle kernels push -p ./kaggle/
-          echo "Kernel pushed successfully. Waiting for execution to start..."
+          cd kaggle
+          python -c "
+          from kaggle.api.kaggle_api_extended import KaggleApi
+          api = KaggleApi()
+          api.authenticate()
+          api.kernels_push_cli('.', timeout=None, acc=None)
+          print('Kernel pushed successfully!')
+          "
+          echo "Waiting for execution to start..."
           sleep 30
 
       - name: Wait for Kaggle kernel to complete
@@ -63,7 +62,13 @@ jobs:
           echo "Monitoring kernel: $KERNEL_SLUG"
 
           while [ $ELAPSED -lt $MAX_WAIT ]; do
-            STATUS=$(kaggle kernels status "$KERNEL_SLUG" 2>&1 || true)
+            STATUS=$(python -c "
+          from kaggle.api.kaggle_api_extended import KaggleApi
+          api = KaggleApi()
+          api.authenticate()
+          status = api.kernels_status('$KERNEL_SLUG')
+          print(status)
+          " 2>&1 || true)
             echo "[$((ELAPSED/60))m] Status: $STATUS"
 
             if echo "$STATUS" | grep -qi "complete"; then
@@ -87,7 +92,12 @@ jobs:
       - name: Download kernel output
         run: |
           mkdir -p kaggle_output
-          kaggle kernels output "$KERNEL_SLUG" -p ./kaggle_output/
+          python -c "
+          from kaggle.api.kaggle_api_extended import KaggleApi
+          api = KaggleApi()
+          api.authenticate()
+          api.kernels_output_cli('$KERNEL_SLUG', path='./kaggle_output/')
+          "
           echo "Downloaded output files:"
           ls -la kaggle_output/
           if [ -f kaggle_output/metrics.json ]; then
